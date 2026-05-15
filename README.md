@@ -49,19 +49,6 @@ comparar_PID_vs_LQR
 
 ---
 
-## O que NÃO está versionado
-
-Os arquivos gerados pelo Simulink ficam fora do repositório (ver `.gitignore`):
-
-- `slprj/` — cache de build do Simulink
-- `*.slxc` — cache compilado dos modelos
-- `*.asv`, `*.m~` — backups do editor MATLAB
-- `.DS_Store` — metadados do macOS
-
-Rode `DH_inicializacao` (PID) ou `LQRy_nonlinear` (LQR) que o cache é regenerado automaticamente na primeira simulação.
-
----
-
 ## Autores
 
 - PID, comparação e organização do repositório — Kaue Martins (ITA / EEC-D)
