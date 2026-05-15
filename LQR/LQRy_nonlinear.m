@@ -19,13 +19,8 @@ clc
 bdclose all
 close all
 
-%% EScolher voo em modo control theta ou control altitude
-% att_alt = 1; attitude theta
-% att_alt = 0; altitude
-
 load('DH.mat')
-att_alt = 0;
 
-%% Modelo nao linear
+%% Modelo nao linear (sempre rodado em modo step de theta)
 open('Close_loop_nao_linear.slx')
 sim('Close_loop_nao_linear.slx')

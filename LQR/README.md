@@ -17,16 +17,7 @@ Execute o script:
 LQRy_nonlinear
 ```
 
-Ele carrega o workspace via `DH.mat` (matrizes, ganhos LQR e parâmetros pré-computados) e abre/simula `Close_loop_nao_linear.slx`.
-
-## Modos de teste
-
-No início de `LQRy_nonlinear.m`:
-
-```matlab
-att_alt = 0;   % 0 = step direto em theta
-               % 1 = comando de altitude
-```
+Ele carrega o workspace via `DH.mat` (matrizes, ganhos LQR e parâmetros pré-computados) e abre/simula `Close_loop_nao_linear.slx`. O teste é sempre um **step de θ** (referência de pitch) — o instante e a amplitude são editados direto no bloco Step dentro do `Close_loop_nao_linear.slx`.
 
 ## Comparar com o PID
 
