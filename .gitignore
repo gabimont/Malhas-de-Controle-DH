@@ -1,0 +1,22 @@
+# Simulink build / cache
+slprj/
+*.slxc
+*.autosave
+*.slx.r*
+
+# MATLAB editor backups
+*.asv
+*.m~
+
+# MATLAB code analyzer / profile
+*.mex*
+codegen/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / agent
+.claude/
+.idea/
+.vscode/
