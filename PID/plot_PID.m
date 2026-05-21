@@ -235,10 +235,10 @@ if ~exist('save_apresentacao','var') || save_apresentacao
     cGrid_p = [0.4  0.4  0.4 ];   % cinza (grid)
     LW_p    = 1.8;
 
-    % Forca figuras subsequentes invisiveis (evita roubo de foco no macOS)
+    % Forca figuras subsequentes invisiveis (evita roubo de foco no macOS).
+    % Restauramos no fim do loop — sem onCleanup (que vaza entre scripts).
     prev_vis = get(0, 'DefaultFigureVisible');
     set(0, 'DefaultFigureVisible', 'off');
-    cleanupVis = onCleanup(@() set(0, 'DefaultFigureVisible', prev_vis));
 
     for i = 1:size(plots,1)
         sig  = plots{i,1};
@@ -285,6 +285,8 @@ if ~exist('save_apresentacao','var') || save_apresentacao
 
         fprintf('     [%2d/%d] %s.png\n', i, size(plots,1), fn);
     end
+
+    set(0, 'DefaultFigureVisible', prev_vis);   % restaura visibilidade
 
     fprintf('Imagens salvas em: %s\n', img_dir);
     fprintf('  prefixo "%s"  (12 PNGs)\n', prefix);

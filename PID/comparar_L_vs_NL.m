@@ -142,10 +142,10 @@ da_lin      = (y_lat(:,6) + Ue(3)) * R2D;
 %% -------- 6. plot + save --------
 fprintf('[5/5] Salvando PNGs...\n');
 
-% Forca todas as figuras subsequentes invisiveis (evita roubo de foco)
+% Forca todas as figuras subsequentes invisiveis (evita roubo de foco no macOS).
+% Restauramos no fim do loop — sem onCleanup (que vaza entre scripts).
 prev_vis = get(0, 'DefaultFigureVisible');
 set(0, 'DefaultFigureVisible', 'off');
-cleanupVis = onCleanup(@() set(0, 'DefaultFigureVisible', prev_vis));
 
 % Detecta excitacao pro prefixo (mesmo padrao do plot_PID)
 ex_parts = {};
@@ -230,6 +230,8 @@ for i = 1:size(comps,1)
 
     fprintf('     [%d/%d] %s.png\n', i, size(comps,1), fn);
 end
+
+set(0, 'DefaultFigureVisible', prev_vis);   % restaura visibilidade
 
 fprintf('\nPNGs comparativos salvos em: %s\n', img_dir);
 fprintf('  prefixo "%s"  (8 PNGs sobrepondo NL + linear)\n\n', prefix);
