@@ -163,6 +163,105 @@ title('rud','Color','w'); ylabel('deg','Color','w');
 xlabel('t [s]','Color','w');
 ylim(pad_ylim(rud_deg)); set_dark();
 
+%% ---------- imagens individuais para apresentacao ----------
+% Salva um PNG por sinal em "Imagens Apresentacao/" no diretorio do
+% script. O nome do arquivo recebe um prefixo derivado da excitacao
+% (h_ref, VT_ref, psi_ref_final, theta_step_final) — assim runs
+% diferentes nao se sobrescrevem.
+%
+% Para pular este passo: defina  save_apresentacao = false  no
+% workspace antes de rodar plot_PID.
+if ~exist('save_apresentacao','var') || save_apresentacao
+    % --- detecta excitacoes ativas e monta prefixo ---
+    ex_parts = {};
+    if exist('h_ref','var') && exist('he','var') && abs(h_ref - he) > 1e-6
+        ex_parts{end+1} = sprintf('h%+dm', round(h_ref - he));
+    end
+    if exist('VT_ref','var') && exist('Ve','var') && abs(VT_ref - Ve) > 1e-6
+        ex_parts{end+1} = sprintf('VT%+dms', round(VT_ref - Ve));
+    end
+    if exist('psi_ref_final','var') && abs(psi_ref_final) > 1e-6
+        ex_parts{end+1} = sprintf('psi%+ddeg', round(psi_ref_final * R2D));
+    end
+    if exist('att_alt','var') && att_alt > 0.5 && ...
+       exist('theta_step_final','var') && abs(theta_step_final) > 1e-6
+        ex_parts{end+1} = sprintf('thetaStep%+ddeg', ...
+                                  round(theta_step_final * R2D));
+    end
+    if isempty(ex_parts)
+        prefix = 'trim';
+    elseif numel(ex_parts) == 1
+        prefix = ex_parts{1};
+    else
+        prefix = ['combinado_' strjoin(ex_parts, '_')];
+    end
+
+    % --- pasta de saida (ao lado do plot_PID.m) ---
+    try
+        script_dir = fileparts(mfilename('fullpath'));
+    catch
+        script_dir = pwd;
+    end
+    img_dir = fullfile(script_dir, 'Imagens Apresentacao');
+    if ~exist(img_dir, 'dir'); mkdir(img_dir); end
+
+    % --- sinais extras (nao plotados na figura principal) ---
+    VT_ms    = Y(:,1);     % velocidade
+    throttle = U(:,1);     % throttle (adim, 0..1)
+
+    % --- catalogo: {sinal, ref opcional, titulo TeX, ylabel, filename} ---
+    plots = {
+        q_deg,        [],              'q',         'deg/s',  'q';
+        r_deg,        [],              'r',         'deg/s',  'r';
+        p_deg,        [],              'p',         'deg/s',  'p';
+        theta_deg,    theta_ref_deg,   '\theta',    'deg',    'theta';
+        phi_deg,      phi_ref_deg,     '\phi',      'deg',    'phi';
+        psi_deg,      psi_ref_deg,     '\psi',      'deg',    'psi';
+        elev_deg,     [],              'elev',      'deg',    'elev';
+        ail_deg,      [],              'ail',       'deg',    'ail';
+        rud_deg,      [],              'rud',       'deg',    'rud';
+        h,            [],              'h',         'm',      'h';
+        VT_ms,        [],              'V_T',       'm/s',    'VT';
+        throttle,     [],              'throttle',  '-',      'throttle';
+    };
+
+    % --- estilo claro para slides ---
+    cSig_p = [0.85 0.33 0.10];   % laranja escuro (line)
+    cRef_p = [0    0    0   ];   % preto (ref)
+    LW_p   = 1.8;
+
+    for i = 1:size(plots,1)
+        sig  = plots{i,1};
+        ref  = plots{i,2};
+        ttl  = plots{i,3};
+        ylbl = plots{i,4};
+        fn   = plots{i,5};
+
+        f = figure('Color','w','Position',[100 100 900 480],'Visible','off');
+        ax = axes(f); hold(ax,'on');
+        if ~isempty(ref) && any(~isnan(ref))
+            plot(ax, t, ref, '--', 'Color', cRef_p, 'LineWidth', LW_p, ...
+                 'DisplayName', 'ref');
+        end
+        plot(ax, t, sig, 'Color', cSig_p, 'LineWidth', LW_p, ...
+             'DisplayName', ttl);
+        grid(ax,'on');
+        title(ax, ttl, 'Interpreter','tex','FontSize',16);
+        ylabel(ax, ylbl, 'FontSize',13);
+        xlabel(ax, 't [s]', 'FontSize',13);
+        if ~isempty(ref) && any(~isnan(ref))
+            legend(ax, 'Location','best', 'Box','off', 'FontSize',12);
+        end
+        set(ax, 'FontSize',12, 'LineWidth',1.0);
+        exportgraphics(f, fullfile(img_dir, [prefix '_' fn '.png']), ...
+                       'Resolution', 150);
+        close(f);
+    end
+
+    fprintf('Imagens salvas em: %s\n', img_dir);
+    fprintf('  prefixo "%s"  (12 PNGs)\n', prefix);
+end
+
 %% ---------- local function ----------
 function ylims = pad_ylim(y)
     y = y(~isnan(y));
