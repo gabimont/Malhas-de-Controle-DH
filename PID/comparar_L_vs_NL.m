@@ -78,15 +78,16 @@ h_trim     = Y_nl(1,15);
 %% -------- 3. monta CL linear longitudinal --------
 fprintf('[2/5] Montando CL linear longitudinal...\n');
 
+% sys_long ja vem com InputName={'throttle','elevator'} e
+% OutputName={'u','alpha','q','theta','h'} do MATRIZES_DH.m.
+% Nao re-nomeia, usa esses nomes pra ligar tudo.
 P_long = sys_long;
-P_long.InputName  = {'de','dT'};
-P_long.OutputName = {'u','alpha','q','theta','h'};
 
 % PIDs (filtro derivativo Tf = 1/N apenas se Kd != 0)
 make_pid = @(C) makePID(C);
 Calt   = make_pid(C_alt);    Calt.InputName   = 'e_h';     Calt.OutputName   = 'theta_ref_int';
-Ctheta = make_pid(C_theta);  Ctheta.InputName = 'e_theta'; Ctheta.OutputName = 'de';
-Cvel   = make_pid(C_vel);    Cvel.InputName   = 'e_VT';    Cvel.OutputName   = 'dT';
+Ctheta = make_pid(C_theta);  Ctheta.InputName = 'e_theta'; Ctheta.OutputName = 'elevator';
+Cvel   = make_pid(C_vel);    Cvel.InputName   = 'e_VT';    Cvel.OutputName   = 'throttle';
 
 % Somadores (sumblk)
 Sum_h     = sumblk('e_h     = h_ref         - h');
@@ -95,17 +96,16 @@ Sum_VT    = sumblk('e_VT    = VT_ref        - u');
 
 CL_long = connect(P_long, Calt, Ctheta, Cvel, Sum_h, Sum_theta, Sum_VT, ...
                   {'h_ref','VT_ref'}, ...
-                  {'h','theta','u','de','dT'});
+                  {'h','theta','u','elevator','throttle'});
 
 %% -------- 4. monta CL linear lateral --------
 fprintf('[3/5] Montando CL linear lateral...\n');
 
-% Sem yaw damper (Kr=0); usa so a primeira coluna de B (delta_a)
-P_lat = sys_lat(:, 1);
-P_lat.InputName  = 'da';
-P_lat.OutputName = {'beta','p','r','phi','psi'};
+% Sem yaw damper (Kr=0); usa so a primeira coluna de B (aileron).
+% sys_lat ja vem com InputName={'aileron','rudder'} do MATRIZES_DH.m.
+P_lat = sys_lat(:, 1);   % so a coluna do aileron
 
-Cphi = make_pid(C_phi); Cphi.InputName = 'e_phi'; Cphi.OutputName = 'da';
+Cphi = make_pid(C_phi); Cphi.InputName = 'e_phi'; Cphi.OutputName = 'aileron';
 
 Sum_psi      = sumblk('e_psi   = psi_ref - psi');
 Calc_phi_ref = sumblk(sprintf('phi_ref = %.10g*e_psi', K_heading));
@@ -113,7 +113,7 @@ Sum_phi      = sumblk('e_phi   = phi_ref - phi');
 
 CL_lat = connect(P_lat, Cphi, Sum_psi, Calc_phi_ref, Sum_phi, ...
                  {'psi_ref'}, ...
-                 {'psi','phi','beta','p','r','da'});
+                 {'psi','phi','beta','p','r','aileron'});
 
 %% -------- 5. simula linear --------
 fprintf('[4/5] Simulando linear (lsim no time grid do NL)...\n');
