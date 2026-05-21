@@ -209,6 +209,10 @@ if ~exist('save_apresentacao','var') || save_apresentacao
     VT_ms    = Y(:,1);     % velocidade
     throttle = U(:,1);     % throttle (adim, 0..1)
 
+    % --- referencias constantes (mostradas tracejadas mesmo sem excitacao) ---
+    if exist('h_ref','var'),  h_ref_vec  = h_ref  * ones(size(t)); else, h_ref_vec  = []; end
+    if exist('VT_ref','var'), VT_ref_vec = VT_ref * ones(size(t)); else, VT_ref_vec = []; end
+
     % --- catalogo: {sinal, ref opcional, titulo TeX, ylabel, filename} ---
     plots = {
         q_deg,        [],              'q',         'deg/s',  'q';
@@ -220,8 +224,8 @@ if ~exist('save_apresentacao','var') || save_apresentacao
         elev_deg,     [],              'elev',      'deg',    'elev';
         ail_deg,      [],              'ail',       'deg',    'ail';
         rud_deg,      [],              'rud',       'deg',    'rud';
-        h,            [],              'h',         'm',      'h';
-        VT_ms,        [],              'V_T',       'm/s',    'VT';
+        h,            h_ref_vec,       'h',         'm',      'h';
+        VT_ms,        VT_ref_vec,      'V_T',       'm/s',    'VT';
         throttle,     [],              'throttle',  '-',      'throttle';
     };
 
