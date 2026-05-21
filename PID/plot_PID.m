@@ -226,9 +226,10 @@ if ~exist('save_apresentacao','var') || save_apresentacao
     };
 
     % --- estilo claro para slides ---
-    cSig_p = [0.85 0.33 0.10];   % laranja escuro (line)
-    cRef_p = [0    0    0   ];   % preto (ref)
-    LW_p   = 1.8;
+    cSig_p  = [0.85 0.33 0.10];   % laranja escuro (sinal)
+    cRef_p  = [0    0    0   ];   % preto (ref)
+    cGrid_p = [0.4  0.4  0.4 ];   % cinza (grid)
+    LW_p    = 1.8;
 
     for i = 1:size(plots,1)
         sig  = plots{i,1};
@@ -237,24 +238,40 @@ if ~exist('save_apresentacao','var') || save_apresentacao
         ylbl = plots{i,4};
         fn   = plots{i,5};
 
-        f = figure('Color','w','Position',[100 100 900 480],'Visible','off');
+        f = figure('Color','w', 'Position',[100 100 900 480], 'Visible','off');
+        try, f.Theme = 'light'; catch, end   % R2023a+ — forca tema claro
+
         ax = axes(f); hold(ax,'on');
+        set(ax, ...
+            'Color',     'w', ...
+            'XColor',    'k', ...
+            'YColor',    'k', ...
+            'GridColor', cGrid_p, ...
+            'GridAlpha', 0.3, ...
+            'FontSize',  12, ...
+            'LineWidth', 1.0, ...
+            'Box',       'on');
+
         if ~isempty(ref) && any(~isnan(ref))
             plot(ax, t, ref, '--', 'Color', cRef_p, 'LineWidth', LW_p, ...
                  'DisplayName', 'ref');
         end
         plot(ax, t, sig, 'Color', cSig_p, 'LineWidth', LW_p, ...
              'DisplayName', ttl);
+
         grid(ax,'on');
-        title(ax, ttl, 'Interpreter','tex','FontSize',16);
-        ylabel(ax, ylbl, 'FontSize',13);
-        xlabel(ax, 't [s]', 'FontSize',13);
+        title(ax,  ttl, 'Interpreter','tex', 'FontSize',16, ...
+              'Color','k', 'FontWeight','bold');
+        ylabel(ax, ylbl,  'FontSize',13, 'Color','k');
+        xlabel(ax, 't [s]', 'FontSize',13, 'Color','k');
+
         if ~isempty(ref) && any(~isnan(ref))
-            legend(ax, 'Location','best', 'Box','off', 'FontSize',12);
+            leg = legend(ax, 'Location','best', 'Box','off', 'FontSize',12);
+            set(leg, 'TextColor', 'k');
         end
-        set(ax, 'FontSize',12, 'LineWidth',1.0);
+
         exportgraphics(f, fullfile(img_dir, [prefix '_' fn '.png']), ...
-                       'Resolution', 150);
+                       'BackgroundColor', 'white', 'Resolution', 150);
         close(f);
     end
 
