@@ -46,9 +46,15 @@ end
 
 R2D = 180/pi;
 
-%% -------- 2. roda NL --------
-fprintf('[1/5] Rodando NL closed-loop...\n');
-out_nl = sim('modelo_NL_DH_CL');
+%% -------- 2. pega NL (reusa "out" do workspace se ja existir) --------
+if evalin('base','exist(''out'',''var'')') && ...
+   isa(evalin('base','out'), 'Simulink.SimulationOutput')
+    fprintf('[1/5] Usando "out" ja existente do workspace (skip sim).\n');
+    out_nl = evalin('base','out');
+else
+    fprintf('[1/5] Rodando NL closed-loop...\n');
+    out_nl = sim('modelo_NL_DH_CL');
+end
 
 t_nl        = out_nl.tout;
 Y_nl        = out_nl.Y.signals.values;   % [VT alpha beta gamma p q r phi theta psi ax ay az xN h ...]
@@ -136,6 +142,11 @@ da_lin      = (y_lat(:,6) + Ue(3)) * R2D;
 %% -------- 6. plot + save --------
 fprintf('[5/5] Salvando PNGs...\n');
 
+% Forca todas as figuras subsequentes invisiveis (evita roubo de foco)
+prev_vis = get(0, 'DefaultFigureVisible');
+set(0, 'DefaultFigureVisible', 'off');
+cleanupVis = onCleanup(@() set(0, 'DefaultFigureVisible', prev_vis));
+
 % Detecta excitacao pro prefixo (mesmo padrao do plot_PID)
 ex_parts = {};
 if abs(h_ref - he) > 1e-6
@@ -216,6 +227,8 @@ for i = 1:size(comps,1)
     exportgraphics(f, fullfile(img_dir, [prefix '_' fn '.png']), ...
                    'BackgroundColor','white','Resolution',150);
     close(f);
+
+    fprintf('     [%d/%d] %s.png\n', i, size(comps,1), fn);
 end
 
 fprintf('\nPNGs comparativos salvos em: %s\n', img_dir);
