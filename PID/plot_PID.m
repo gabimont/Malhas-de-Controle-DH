@@ -277,6 +277,99 @@ if ~exist('save_apresentacao','var') || save_apresentacao
 
     fprintf('Imagens salvas em: %s\n', img_dir);
     fprintf('  prefixo "%s"  (12 PNGs)\n', prefix);
+
+    %% ---------- metricas (stepinfo + esforco de controle) ----------
+    rep = {};
+    rep{end+1} = sprintf('=== Metricas: %s ===', prefix);
+    rep{end+1} = '';
+
+    % Helper p/ janela final (ultimos 10% da sim) — usado pra regime
+    tail_idx  = t > (t(end) - 0.1*(t(end) - t(1)));
+    fmt_info  = @(s, info, yfinal, yinit, ss_val, unit) {
+        sprintf('%s  (ref = %.3f %s, inicial = %.3f %s)', s, yfinal, unit, yinit, unit), ...
+        sprintf('  Rise time     : %.3f s', info.RiseTime), ...
+        sprintf('  Settling 2%%   : %.3f s', info.SettlingTime), ...
+        sprintf('  Overshoot     : %.2f %%',  info.Overshoot), ...
+        sprintf('  Peak          : %.3f %s  (t = %.2f s)', info.Peak, unit, info.PeakTime), ...
+        sprintf('  Regime        : %.3f %s  (erro = %.3f %s)', ss_val, unit, abs(yfinal-ss_val), unit), ...
+        '' };
+
+    % --- altitude ---
+    if exist('h_ref','var') && exist('he','var') && abs(h_ref - he) > 1e-6
+        try
+            info = stepinfo(h, t, h_ref, h(1));
+            ss   = mean(h(tail_idx));
+            rep  = [rep, fmt_info('Altitude (h)', info, h_ref, h(1), ss, 'm')];
+        catch ME
+            rep{end+1} = sprintf('Altitude: erro em stepinfo (%s)', ME.message);
+            rep{end+1} = '';
+        end
+    end
+
+    % --- velocidade ---
+    if exist('VT_ref','var') && exist('Ve','var') && abs(VT_ref - Ve) > 1e-6
+        try
+            info = stepinfo(VT_ms, t, VT_ref, VT_ms(1));
+            ss   = mean(VT_ms(tail_idx));
+            rep  = [rep, fmt_info('Velocidade (V_T)', info, VT_ref, VT_ms(1), ss, 'm/s')];
+        catch ME
+            rep{end+1} = sprintf('Velocidade: erro em stepinfo (%s)', ME.message);
+            rep{end+1} = '';
+        end
+    end
+
+    % --- heading (step em t = psi_ref_t, precisa truncar tempo) ---
+    if exist('psi_ref_final','var') && exist('psi_ref_t','var') && abs(psi_ref_final) > 1e-6
+        try
+            idx          = t >= psi_ref_t;
+            t_local      = t(idx) - psi_ref_t;
+            y_local      = psi_deg(idx);
+            psi_tgt_deg  = psi_ref_final * R2D;
+            info         = stepinfo(y_local, t_local, psi_tgt_deg, 0);
+            ss           = mean(y_local(t_local > max(t_local)*0.9));
+            rep          = [rep, fmt_info('Heading (psi)', info, psi_tgt_deg, 0, ss, 'deg')];
+        catch ME
+            rep{end+1} = sprintf('Heading: erro em stepinfo (%s)', ME.message);
+            rep{end+1} = '';
+        end
+    end
+
+    % --- pitch (rastreamento de theta_ref pela malha interna) ---
+    if ~all(isnan(theta_ref_deg))
+        [~, idx_pk] = max(abs(theta_ref_deg));
+        rep{end+1} = 'Pitch (theta)  rastreando theta_ref gerado pela cascata';
+        rep{end+1} = sprintf('  Pico theta_ref : %+.3f deg  (t = %.2f s)', ...
+                              theta_ref_deg(idx_pk), t(idx_pk));
+        rep{end+1} = sprintf('  theta no pico  : %+.3f deg', theta_deg(idx_pk));
+        rep{end+1} = sprintf('  Regime theta_ref: %+.3f deg', mean(theta_ref_deg(tail_idx)));
+        rep{end+1} = sprintf('  Regime theta   : %+.3f deg', mean(theta_deg(tail_idx)));
+        rms_err    = sqrt(mean((theta_deg - theta_ref_deg).^2, 'omitnan'));
+        rep{end+1} = sprintf('  RMS(theta-ref) : %.3f deg', rms_err);
+        rep{end+1} = '';
+    end
+
+    % --- atuadores ---
+    rep{end+1} = 'Atuadores:';
+    rep{end+1} = sprintf('  Profundor (elev) pico abs: %.3f deg   regime: %+.3f deg', ...
+                          max(abs(elev_deg)), mean(elev_deg(tail_idx)));
+    rep{end+1} = sprintf('  Aileron   (ail)  pico abs: %.3f deg   regime: %+.3f deg', ...
+                          max(abs(ail_deg)),  mean(ail_deg(tail_idx)));
+    rep{end+1} = sprintf('  Rudder    (rud)  pico abs: %.3f deg   regime: %+.3f deg', ...
+                          max(abs(rud_deg)),  mean(rud_deg(tail_idx)));
+    rep{end+1} = sprintf('  Throttle         pico:     %.3f       regime:  %.3f', ...
+                          max(throttle),     mean(throttle(tail_idx)));
+
+    % imprime no console e salva
+    txt = strjoin(rep, newline);
+    fprintf('\n%s\n\n', txt);
+
+    txt_file = fullfile(img_dir, [prefix '_metricas.txt']);
+    fid = fopen(txt_file, 'w');
+    if fid > 0
+        fprintf(fid, '%s\n', txt);
+        fclose(fid);
+        fprintf('Metricas salvas em: %s\n', txt_file);
+    end
 end
 
 %% ---------- local function ----------
